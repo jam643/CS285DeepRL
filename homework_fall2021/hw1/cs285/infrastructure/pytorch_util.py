@@ -17,6 +17,25 @@ _str_to_activation = {
 }
 
 
+# SOLUTION
+class Net(nn.Module):
+    def __init__(self, n_layers, input_size, output_size, hidden_size, activation, output_activation):
+        super().__init__()
+
+        self.activation_fns = [activation]*(n_layers+1) + [output_activation]
+
+        fc_layers = [nn.Linear(input_size, hidden_size)]
+        for _ in range(n_layers):
+            fc_layers.append(nn.Linear(hidden_size, hidden_size))
+        fc_layers.append(nn.Linear(hidden_size, output_size))
+        self.fc_layers = nn.ModuleList(fc_layers)
+
+    def forward(self, x):
+        for idx, _ in enumerate(self.fc_layers):
+            x = self.activation_fns[idx](self.fc_layers[idx](x))
+        return x
+
+
 def build_mlp(
         input_size: int,
         output_size: int,
@@ -47,7 +66,7 @@ def build_mlp(
 
     # TODO: return a MLP. This should be an instance of nn.Module
     # Note: nn.Sequential is an instance of nn.Module.
-    raise NotImplementedError
+    return Net(n_layers, input_size, output_size, size, activation, output_activation)
 
 
 device = None
