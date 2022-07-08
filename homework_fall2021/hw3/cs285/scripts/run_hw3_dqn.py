@@ -68,7 +68,7 @@ def main():
 
     # convert to dictionary
     params = vars(args)
-    params['video_log_freq'] = -1 # This param is not used for DQN
+    # params['video_log_freq'] = -1 # This param is not used for DQN
     ##################################
     ### CREATE DIRECTORY FOR LOGGING
     ##################################

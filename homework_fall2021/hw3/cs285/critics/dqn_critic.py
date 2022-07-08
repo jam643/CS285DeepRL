@@ -63,11 +63,15 @@ class DQNCritic(BaseCritic):
         reward_n = ptu.from_numpy(reward_n)
         terminal_n = ptu.from_numpy(terminal_n)
 
+        # shape=(N_observations, action_dim): for each observation output Q-val for each discrete action
         qa_t_values = self.q_net(ob_no)
+        # shape=(N_observations,): get Q-val for given action, observation, Q(obs_i, a_i)
         q_t_values = torch.gather(qa_t_values, 1, ac_na.unsqueeze(1)).squeeze(1)
         
-        # TODO compute the Q-values from the target network 
-        qa_tp1_values = TODO
+        # TODO compute the Q-values from the target network
+        # note, target network only updated at target_update_freq and is not backpropped through
+        # avoids target being a "moving target" and having to diff through max operator
+        qa_tp1_values = self.q_net_target(next_ob_no)
 
         if self.double_q:
             # You must fill this part for Q2 of the Q-learning portion of the homework.
@@ -75,14 +79,18 @@ class DQNCritic(BaseCritic):
             # is being updated, but the Q-value for this action is obtained from the
             # target Q-network. Please review Lecture 8 for more details,
             # and page 4 of https://arxiv.org/pdf/1509.06461.pdf is also a good reference.
-            TODO
+
+            # use current network to eval action (argmax), but still sue target network to evaluate value
+            # this avoid value overestimation
+            q_tp_best_action = torch.argmax(self.q_net(next_ob_no), dim=1)
+            q_tp1 = torch.gather(qa_tp1_values, 1, q_tp_best_action.unsqueeze(1)).squeeze(1)
         else:
             q_tp1, _ = qa_tp1_values.max(dim=1)
 
         # TODO compute targets for minimizing Bellman error
         # HINT: as you saw in lecture, this would be:
-            #currentReward + self.gamma * qValuesOfNextTimestep * (not terminal)
-        target = TODO
+        # currentReward + self.gamma * qValuesOfNextTimestep * (not terminal)
+        target = reward_n + torch.mul(q_tp1, self.gamma) * (~terminal_n.bool())
         target = target.detach()
 
         assert q_t_values.shape == target.shape
